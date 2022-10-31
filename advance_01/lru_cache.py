@@ -16,7 +16,17 @@ LOG_FILE = "cache.log"
 LOG_LEVEL_FILE = logging.INFO
 LOG_LEVEL_STREAM = logging.DEBUG
 
-logger = logging.getLogger()
+
+def create_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-s', '--stream',
+        action='store_true',
+        help="output log to console",
+        required=False
+        )
+    return parser
+
 
 log_conf = {
     "version": 1,
@@ -25,7 +35,7 @@ log_conf = {
             "format": "%(asctime)s\t%(levelname)s\t%(message)s",
         },
         "processed": {
-            "format": "%(asctime)s\t%(levelname)s\t%(name)s\t%(message)s",
+            "format": "|| %(asctime)s\t%(levelname)s\t%(name)s\t%(message)s",
         },
     },
     "handlers": {
@@ -44,17 +54,26 @@ log_conf = {
     },
     "loggers": {
         "": {
-            "level": logging.DEBUG,
+            "level": "DEBUG",
             "handlers": ["file_handler"],
         },
         "total": {
-            "level": logging.DEBUG,
+            "level": "DEBUG",
             "handlers": ["file_handler", "stream_handler"],
         },
     },
 }
 
 logging.config.dictConfig(log_conf)
+
+args_parser = create_parser()
+args = args_parser.parse_args()
+
+if args.stream:
+    logger = logging.getLogger("total")
+    logger.propagate = False
+else:
+    logger = logging.getLogger()
 
 
 class LRUCache:
@@ -112,32 +131,8 @@ class LRUCache:
             logger.debug("add \"%s\" to deque", key)
 
 
-def create_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-s', '--stream',
-        action='store_true',
-        help="output log to console",
-        required=False
-        )
-    return parser
-
-
 def main():
     """Create and test LRU cache."""
-    logging.config.dictConfig(log_conf)
-
-    parser = create_parser()
-    args = parser.parse_args()
-
-    if args.stream:
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter(
-            "%(asctime)s||\t%(levelname)s\t%(name)s\t%(message)s"
-            )
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-
     cache = LRUCache(2)
 
     cache.set("k1", "val1")
